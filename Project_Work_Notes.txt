@@ -1,0 +1,322 @@
+python -m venv venv                 
+.\venv\Scripts\activate
+
+pip install -r requirements.txt  
+
+uvicorn app.main:app --reload --port 8000
+
+#### Install your project in development mode
+>>pip install -e .
+
+
+
+pip install pytest
+
+####TEST:
+$body = @'
+{
+  "Cement (component 1)(kg in a m^3 mixture)": 540.0,
+  "Blast Furnace Slag (component 2)(kg in a m^3 mixture)": 0.0,
+  "Fly Ash (component 3)(kg in a m^3 mixture)": 0.0,
+  "Water  (component 4)(kg in a m^3 mixture)": 162.0,
+  "Superplasticizer (component 5)(kg in a m^3 mixture)": 2.5,
+  "Coarse Aggregate  (component 6)(kg in a m^3 mixture)": 1040.0,
+  "Fine Aggregate (component 7)(kg in a m^3 mixture)": 676.0,
+  "Age (day)": 28
+}
+'@
+
+Invoke-WebRequest -Uri "http://127.0.0.1:8000/predict" -Method POST -Body $body -ContentType "application/json"
+Expected OUTPUT:
+predicted_strength : 79.52842712402344
+units              : MPa
+model_version      : 1.0.0
+features_used      : {Cement (component 1)(kg in a m^3 mixture), Blast Furnace Slag (component 2)(kg in a m^3 mixture), Fly Ash (component 3)(kg in a m^3 mixture),     
+                     Water  (component 4)(kg in a m^3 mixture)...}
+status             : success
+
+
+
+# Test the API endpoint: http://127.0.0.1:8000/docs
+
+
+# In Powershell: # Test if API is running
+>> Invoke-RestMethod -Uri "http://127.0.0.1:8000/health" -Method GET
+Expected OUTPUT:
+status  model_loaded model_version timestamp
+------  ------------ ------------- ---------
+healthy         True 1.0.0         2025-11-07T05:30:32.499736
+
+
+# Get model information
+Invoke-RestMethod -Uri "http://127.0.0.1:8000/metadata" -Method GET
+
+
+# Get model information
+>> Invoke-RestMethod -Uri "http://127.0.0.1:8000/metadata" -Method GET
+Expected OUTPUT:
+model_type          : XGBRegressor
+model_version       : 1.0.0
+training_date       : 2024-01-01
+features_used       : 11
+target              : Concrete compressive strength(MPa, megapascals)
+performance_metrics : @{r2_score=0.89; rmse=4.23; algorithm=RandomForestRegressor}
+
+
+# Get explanation for the prediction
+$explainBody = @'
+{
+  "Cement (component 1)(kg in a m^3 mixture)": 540.0,
+  "Blast Furnace Slag (component 2)(kg in a m^3 mixture)": 0.0,
+  "Fly Ash (component 3)(kg in a m^3 mixture)": 0.0,
+  "Water  (component 4)(kg in a m^3 mixture)": 162.0,
+  "Superplasticizer (component 5)(kg in a m^3 mixture)": 2.5,
+  "Coarse Aggregate  (component 6)(kg in a m^3 mixture)": 1040.0,
+  "Fine Aggregate (component 7)(kg in a m^3 mixture)": 676.0,
+  "Age (day)": 28
+}
+'@
+
+Invoke-RestMethod -Uri "http://127.0.0.1:8000/explain" -Method POST -Body $explainBody -ContentType "application/json"
+Expected OUTPUT:
+feature_importance
+------------------
+@{Cement=0.25; Water=0.2; Age=0.15; Water-Binder Ratio=0.12; Superplasticizer=0.1; Fly Ash=0.08; Blast Furnace Slag=0.05; Aggregate-Cement Ratio=0.03; Coarse Aggreg...
+
+##########COMMAND LINE TEST###########
+# Complete Testing Sequence
+# 1. Health check
+Write-Host "=== Health Check ===" -ForegroundColor Green
+Invoke-RestMethod -Uri "http://127.0.0.1:8000/health" -Method GET
+Expected OUTPUT ; === Health Check ===
+status  model_loaded model_version timestamp
+------  ------------ ------------- ---------
+healthy         True 1.0.0         2025-11-07T05:58:06.040593
+
+# 2. Get metadata
+Write-Host "`n=== Metadata ===" -ForegroundColor Green
+Invoke-RestMethod -Uri "http://127.0.0.1:8000/metadata" -Method GET
+Expected OUTPUT ; === Metadata ===
+model_type          : XGBRegressor
+model_version       : 1.0.0
+training_date       : 2024-01-01
+features_used       : 11
+target              : Concrete compressive strength(MPa, megapascals)
+performance_metrics : @{r2_score=0.89; rmse=4.23; algorithm=RandomForestRegressor}
+
+# 3. Make prediction
+Write-Host "`n=== Prediction ===" -ForegroundColor Green
+Invoke-RestMethod -Uri "http://127.0.0.1:8000/predict" -Method POST -Body $body -ContentType "application/json"
+Expected OUTPUT ; === Prediction ===
+predicted_strength : 79.52842712402344
+units              : MPa
+model_version      : 1.0.0
+features_used      : {Cement (component 1)(kg in a m^3 mixture), Blast Furnace Slag (component 2)(kg in a m^3 mixture), Fly Ash (component 3)(kg in a m^3 mixture), Water  (component 4)(kg in a   
+                     m^3 mixture)...}
+status             : success
+
+# 4. Get explanation
+Write-Host "`n=== Explanation ===" -ForegroundColor Green
+Invoke-RestMethod -Uri "http://127.0.0.1:8000/explain" -Method POST -Body $body -ContentType "application/json"
+Expected OUTPUT ; === Explanation ===
+feature_importance
+------------------
+@{Cement=0.25; Water=0.2; Age=0.15; Water-Binder Ratio=0.12; Superplasticizer=0.1; Fly Ash=0.08; Blast Furnace Slag=0.05; Aggregate-Cement Ratio=0.03; Coarse Aggregate=0.01; Fine Aggregate=0.01} 
+
+
+
+######### Testing Script ###########
+Create an  file called test_scenarios.ps1 with the Below Content: 
+# Test Scenario 1: High-Strength Concrete
+Write-Host "=== TEST 1: High-Strength Concrete ===" -ForegroundColor Yellow
+$highStrength = @'
+{
+  "Cement (component 1)(kg in a m^3 mixture)": 450.0,
+  "Blast Furnace Slag (component 2)(kg in a m^3 mixture)": 100.0,
+  "Fly Ash (component 3)(kg in a m^3 mixture)": 50.0,
+  "Water  (component 4)(kg in a m^3 mixture)": 150.0,
+  "Superplasticizer (component 5)(kg in a m^3 mixture)": 3.0,
+  "Coarse Aggregate  (component 6)(kg in a m^3 mixture)": 1000.0,
+  "Fine Aggregate (component 7)(kg in a m^3 mixture)": 700.0,
+  "Age (day)": 28
+}
+'@
+Invoke-RestMethod -Uri "http://127.0.0.1:8000/predict" -Method POST -Body $highStrength -ContentType "application/json"
+
+# Test Scenario 2: Standard Concrete
+Write-Host "`n=== TEST 2: Standard Concrete ===" -ForegroundColor Yellow
+$standard = @'
+{
+  "Cement (component 1)(kg in a m^3 mixture)": 300.0,
+  "Blast Furnace Slag (component 2)(kg in a m^3 mixture)": 50.0,
+  "Fly Ash (component 3)(kg in a m^3 mixture)": 30.0,
+  "Water  (component 4)(kg in a m^3 mixture)": 180.0,
+  "Superplasticizer (component 5)(kg in a m^3 mixture)": 1.0,
+  "Coarse Aggregate  (component 6)(kg in a m^3 mixture)": 1100.0,
+  "Fine Aggregate (component 7)(kg in a m^3 mixture)": 750.0,
+  "Age (day)": 28
+}
+'@
+Invoke-RestMethod -Uri "http://127.0.0.1:8000/predict" -Method POST -Body $standard -ContentType "application/json"
+
+# Test Scenario 3: Early Strength (7 days)
+Write-Host "`n=== TEST 3: Early Strength (7 days) ===" -ForegroundColor Yellow
+$early = @'
+{
+  "Cement (component 1)(kg in a m^3 mixture)": 400.0,
+  "Blast Furnace Slag (component 2)(kg in a m^3 mixture)": 0.0,
+  "Fly Ash (component 3)(kg in a m^3 mixture)": 0.0,
+  "Water  (component 4)(kg in a m^3 mixture)": 170.0,
+  "Superplasticizer (component 5)(kg in a m^3 mixture)": 2.0,
+  "Coarse Aggregate  (component 6)(kg in a m^3 mixture)": 1050.0,
+  "Fine Aggregate (component 7)(kg in a m^3 mixture)": 680.0,
+  "Age (day)": 7
+}
+'@
+Invoke-RestMethod -Uri "http://127.0.0.1:8000/predict" -Method POST -Body $early -ContentType "application/json"
+
+# Test Scenario 4: Low Cement Mix (FIXED)
+Write-Host "`n=== TEST 4: Low Cement Mix (Fixed) ===" -ForegroundColor Yellow
+$lowCement = @'
+{
+  "Cement (component 1)(kg in a m^3 mixture)": 200.0,
+  "Blast Furnace Slag (component 2)(kg in a m^3 mixture)": 150.0,
+  "Fly Ash (component 3)(kg in a m^3 mixture)": 100.0,
+  "Water  (component 4)(kg in a m^3 mixture)": 190.0,
+  "Superplasticizer (component 5)(kg in a m^3 mixture)": 0.5,
+  "Coarse Aggregate  (component 6)(kg in a m^3 mixture)": 1145.0,
+  "Fine Aggregate (component 7)(kg in a m^3 mixture)": 800.0,
+  "Age (day)": 28
+}
+'@
+Invoke-RestMethod -Uri "http://127.0.0.1:8000/predict" -Method POST -Body $lowCement -ContentType "application/json"
+
+# Test Scenario 5: Ultra High-Strength
+Write-Host "`n=== TEST 5: Ultra High-Strength ===" -ForegroundColor Yellow
+$ultraHigh = @'
+{
+  "Cement (component 1)(kg in a m^3 mixture)": 540.0,
+  "Blast Furnace Slag (component 2)(kg in a m^3 mixture)": 0.0,
+  "Fly Ash (component 3)(kg in a m^3 mixture)": 0.0,
+  "Water  (component 4)(kg in a m^3 mixture)": 160.0,
+  "Superplasticizer (component 5)(kg in a m^3 mixture)": 3.5,
+  "Coarse Aggregate  (component 6)(kg in a m^3 mixture)": 1000.0,
+  "Fine Aggregate (component 7)(kg in a m^3 mixture)": 650.0,
+  "Age (day)": 28
+}
+'@
+Invoke-RestMethod -Uri "http://127.0.0.1:8000/predict" -Method POST -Body $ultraHigh -ContentType "application/json"
+Expected OUTPUT :
+(venv) PS C:\Users\vishn\Downloads.96bd4edb-86af-4b4b-878c-a589606559d8\Downloads\project\cement_strength_predictor> .\test_scenarios.ps1
+=== TEST 1: High-Strength Concrete ===
+
+
+predicted_strength : 68.171630859375
+units              : MPa
+model_version      : 1.0.0
+features_used      : {Cement (component 1)(kg in a m^3 mixture), Blast Furnace Slag (component 2)(kg in a m^3 mixture), Fly Ash (component 3)(kg in a m^3 mixture),     
+                     Water  (component 4)(kg in a m^3 mixture)...}
+status             : success
+
+
+=== TEST 2: Standard Concrete ===
+predicted_strength : 38.11449432373047
+units              : MPa
+model_version      : 1.0.0
+features_used      : {Cement (component 1)(kg in a m^3 mixture), Blast Furnace Slag (component 2)(kg in a m^3 mixture), Fly Ash (component 3)(kg in a m^3 mixture),     
+                     Water  (component 4)(kg in a m^3 mixture)...}
+status             : success
+
+
+=== TEST 3: Early Strength (7 days) ===
+predicted_strength : 35.73929214477539
+units              : MPa
+model_version      : 1.0.0
+features_used      : {Cement (component 1)(kg in a m^3 mixture), Blast Furnace Slag (component 2)(kg in a m^3 mixture), Fly Ash (component 3)(kg in a m^3 mixture),     
+                     Water  (component 4)(kg in a m^3 mixture)...}
+status             : success
+
+
+
+
+############# Using Browser   ###################
+http://127.0.0.1:8000/docs
+api document
+
+Click on /predict endpoint
+Click "Try it out" and Replace JSON and try with different data to check strength
+JSON Example: 
+{
+  "Cement (component 1)(kg in a m^3 mixture)": 450.0,
+  "Blast Furnace Slag (component 2)(kg in a m^3 mixture)": 100.0,
+  "Fly Ash (component 3)(kg in a m^3 mixture)": 50.0,
+  "Water  (component 4)(kg in a m^3 mixture)": 150.0,
+  "Superplasticizer (component 5)(kg in a m^3 mixture)": 3.0,
+  "Coarse Aggregate  (component 6)(kg in a m^3 mixture)": 1000.0,
+  "Fine Aggregate (component 7)(kg in a m^3 mixture)": 700.0,
+  "Age (day)": 28
+}
+
+## URL RESPOnce: {
+  "predicted_strength": 39.784732818603516,
+  "units": "MPa",
+  "model_version": "1.0.0",
+  "features_used": [
+    "Cement (component 1)(kg in a m^3 mixture)",
+    "Blast Furnace Slag (component 2)(kg in a m^3 mixture)",
+    "Fly Ash (component 3)(kg in a m^3 mixture)",
+    "Water  (component 4)(kg in a m^3 mixture)",
+    "Superplasticizer (component 5)(kg in a m^3 mixture)",
+    "Coarse Aggregate  (component 6)(kg in a m^3 mixture)",
+    "Fine Aggregate (component 7)(kg in a m^3 mixture)",
+    "Age (day)",
+    "total_binder",
+    "water_binder_ratio",
+    "aggregate_cement_ratio"
+  ],
+  "status": "success"
+}
+
+############## Test your API endpoints with correct field names
+>> $body = @'
+>> {
+>>   "Cement (component 1)(kg in a m^3 mixture)": 540.0,
+>>   "Blast Furnace Slag (component 2)(kg in a m^3 mixture)": 0.0,
+>>   "Fly Ash (component 3)(kg in a m^3 mixture)": 0.0,
+>>   "Water  (component 4)(kg in a m^3 mixture)": 162.0,
+>>   "Superplasticizer (component 5)(kg in a m^3 mixture)": 2.5,
+>>   "Coarse Aggregate  (component 6)(kg in a m^3 mixture)": 1040.0,
+>>   "Fine Aggregate (component 7)(kg in a m^3 mixture)": 676.0,
+>>   "Age (day)": 28
+>> }
+>> '@
+>>
+>> # Make the API call
+>> Invoke-RestMethod -Uri "http://localhost:8000/predict" -Method POST -Body $body -ContentType "application/json"
+>>
+>> # Install pytest if not already installed
+>> pip install pytest
+>>
+>> # Run your tests
+>> pytest tests/ -v
+Expected OUTPUT:
+predicted_strength : 79.52842712402344
+units              : MPa
+model_version      : 1.0.0
+features_used      : {Cement (component 1)(kg in a m^3 mixture), Blast Furnace Slag (component 2)(kg in a m^3 mixture), Fly Ash (component 3)(kg in a m^3 mixture),     
+                     Water  (component 4)(kg in a m^3 mixture)...}
+status             : success 
+
+
+After Tessting and Evalute Now its Time Model Deployment
+We are using Streamlit
+
+So, Create Streamlit_app folder and app.py in it
+then .streamlit in that config.toml
+
+In one Powershell run First API 
+>>uvicorn app.main:app --reload --port 8000
+and in another Powershell run Streamlite
+>>streamlit run streamlit_app/app.py
+
+

@@ -1,0 +1,10 @@
+Why Use Docker? 🐳
+Docker creates a consistent environment that works everywhere:
+
+Problems Docker Solves:
+"It works on my machine" - Docker ensures it works everywhere the same way
+Dependency hell - All dependencies are packaged together
+Deployment headaches - One command to run anywhere
+Environment inconsistencies - Same OS, same versions everywhere 
+
+
