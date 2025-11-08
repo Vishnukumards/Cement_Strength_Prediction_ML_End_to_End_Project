@@ -116,7 +116,7 @@ features_used      : {Cement (component 1)(kg in a m^3 mixture), Blast Furnace S
 status             : success
 
 # 4. Get explanation
-Write-Host "`n=== Explanation ===" -ForegroundColor Green
+Write-Host "=== Explanation ===" -ForegroundColor Green
 Invoke-RestMethod -Uri "http://127.0.0.1:8000/explain" -Method POST -Body $body -ContentType "application/json"
 Expected OUTPUT ; === Explanation ===
 feature_importance
